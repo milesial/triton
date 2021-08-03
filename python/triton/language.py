@@ -92,6 +92,17 @@ float64 = dtype(ir.type.get_fp64)
 
 pi32_t = pointer_dtype(int32)
 
+torch_to_triton_dtype = {
+    torch.bool: int1,
+    torch.int8: int8,
+    torch.int16: int16,
+    torch.int32: int32,
+    torch.int64: int64,
+    torch.bfloat16: bfloat16,
+    torch.float16: float16,
+    torch.float32: float32,
+    torch.float64: float64,
+}
 
 class block:
     @staticmethod
@@ -254,6 +265,12 @@ class block:
 
     @builtin
     def to(self, dtype, bitcast=False, builder=None):
+        if isinstance(dtype, torch.dtype):
+            if dtype in torch_to_triton_dtype:
+                dtype = torch_to_triton_dtype[dtype]
+            else:
+                ValueError("Unsupported torch.dtype: {dtype}")
+
         dtype = dtype.handle(builder)
         if bitcast:
             return frontend.bitcast(self, dtype, builder)
